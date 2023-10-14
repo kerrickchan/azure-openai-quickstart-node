@@ -1,15 +1,35 @@
-import { Configuration, OpenAIApi } from "openai";
+// OpenAI
+// import { Configuration, OpenAIApi } from "openai";
 
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-const openai = new OpenAIApi(configuration);
+// const configuration = new Configuration({
+//   apiKey: process.env.OPENAI_API_KEY,
+// });
+
+// const openai = new OpenAIApi(configuration);
+// Azure OpenAI
+import { OpenAIClient, AzureKeyCredential } from '@azure/openai';
+
+const endpoint = process.env["AZURE_OPENAI_ENDPOINT"];
+const azureApiKey = process.env["AZURE_OPENAI_KEY"];
+const deploymentId = process.env["AZURE_OPENAI_DEPLOYMENT_ID"];
+
+const client = new OpenAIClient(endpoint, new AzureKeyCredential(azureApiKey));
 
 export default async function (req, res) {
-  if (!configuration.apiKey) {
+  // OpenAI
+  // if (!configuration.apiKey) {
+  //   res.status(500).json({
+  //     error: {
+  //       message: "OpenAI API key not configured, please follow instructions in README.md",
+  //     }
+  //   });
+  //   return;
+  // }
+  // Azure OpenAI
+  if (!endpoint || !azureApiKey || !deploymentId) {
     res.status(500).json({
       error: {
-        message: "OpenAI API key not configured, please follow instructions in README.md",
+        message: "Azure OpenAI API key not configured, please follow instructions in README.md",
       }
     });
     return;
@@ -26,19 +46,27 @@ export default async function (req, res) {
   }
 
   try {
-    const completion = await openai.createCompletion({
-      model: "text-davinci-003",
-      prompt: generatePrompt(animal),
-      temperature: 0.6,
-    });
-    res.status(200).json({ result: completion.data.choices[0].text });
+    // OpenAI
+    // const completion = await openai.createCompletion({
+    //   model: "text-davinci-003",
+    //   prompt: generatePrompt(animal),
+    //   temperature: 0.6,
+    // });
+    // res.status(200).json({ result: completion.data.choices[0].text });
+
+    // Azure OpenAI
+    const { id, created, choices, usage } = await client.getCompletions(deploymentId, [generatePrompt(animal)]);
+    res.status(200).json({ result: choices[0].text });
   } catch(error) {
     // Consider adjusting the error handling logic for your use case
     if (error.response) {
       console.error(error.response.status, error.response.data);
       res.status(error.response.status).json(error.response.data);
     } else {
-      console.error(`Error with OpenAI API request: ${error.message}`);
+      // OpenAI
+      // console.error(`Error with OpenAI API request: ${error.message}`);
+      // Azure OpenAI
+      console.error(`Error with Azure OpenAI API request: ${error.message}`);
       res.status(500).json({
         error: {
           message: 'An error occurred during your request.',
